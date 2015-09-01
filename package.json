@@ -1,0 +1,14 @@
+{
+  "name": "000",
+  "version": "1.0.0",
+  "description": "",
+  "main": "zzz.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "babel-plugin-typecheck": "^1.2.0"
+  }
+}
