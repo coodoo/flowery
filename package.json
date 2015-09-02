@@ -1,14 +1,51 @@
 {
-  "name": "000",
+  "name": "flowery",
   "version": "1.0.0",
-  "description": "",
-  "main": "zzz.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "author": {
+    "name": "Jeremy Lu",
+    "email": "jeremy@pubulous.com"
   },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "babel-plugin-typecheck": "^1.2.0"
-  }
+  "license": "MIT",
+  "contributors": [
+    {
+      "name": "",
+      "url": ""
+    }
+  ],
+  "description": "Prettify the result from Facebook Flow type check tool, making it easier to read",
+  "keywords": [
+    "npm",
+    "flow",
+    "type",
+    "check",
+    "react",
+    "facebook",
+    "flux",
+    "redux",
+    "prettify"
+  ],
+  "preferGlobal": true,
+  "main": "./flowery",
+  "scripts": {
+    "lint": "",
+    "test": "",
+    "start": "babel-node flowery"
+  },
+  "bin": "./flowery",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coodoo/flowery.git"
+  },
+  "homepage": "https://github.com/coodoo/flowery",
+  "dependencies": {},
+  "devDependencies": {},
+  "bugs": {
+    "url": "https://github.com/coodoo/flowery/issues"
+  },
+  "maintainers": [
+    {
+      "name": "jlu",
+      "email": "jeremy@pubulous.com"
+    }
+  ]
 }

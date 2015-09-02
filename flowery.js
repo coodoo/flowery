@@ -1,14 +1,76 @@
 process.stdout.write( '\u001B[2J\u001B[0;0f' );
 
-var fs = require( 'fs' );
-var path = require( 'path' );
+/*
 
-readFile( './z.txt' );
+Usage
 
-function readFile( name ) {
+1. CLI - file
 
-	fs.readFile( name, {encoding:'utf8'}, function( err, data ) {
-		if ( err ) throw err;
+	$ babel-node code log.txt
+
+2. CLI - pipe
+
+	$ flow | babel-node code
+
+3. API
+
+	import readFile from './code';
+	readFile('z.txt').then( result => {console.log(result)}) // {arrErrorObj: [...], arrMessages: [...] }
+
+*/
+
+
+import fs from 'fs';
+import path from 'path';
+
+let arrErrorObj, arrMessages;
+
+if ( process.argv.length > 2 ) {
+	// 給傳檔案名稱的話，就直接開檔，這應該是 flow 生成的 log 檔
+	readFile( process.argv[2] );
+}else {
+	readStdin()
+	.then( data => {
+		// console.log( 'stdin data: ', data );
+		go( data )
+		.then( result => console.log( 'result: ', result.arrMessages.join('\n') ))
+	} );
+}
+
+// 如果是透過 cli pipe 進來的，就從 stdin 讀資料
+// $ flow | babel-node code.js
+function readStdin() {
+	return new Promise( ( resolve, reject ) => {
+		let tmp;
+		process.stdin.setEncoding( 'utf8' );
+		process.stdin.on( 'readable', function() {
+			tmp = process.stdin.read();
+			if ( tmp !== null ) {
+				resolve( tmp );
+
+				// console.log( 'chunk: ', chunk );
+			}else {
+				resolve( null );
+				process.stdin.end(); // pause()
+			}
+		} );
+
+		// process.stdin.on( 'end', function() {
+		// 	resolve(chunk)
+		// } );
+	} )
+}
+
+// 透過 cli 指定 file，可直接開啟
+export default function readFile( name ) {
+	let data = fs.readFileSync( name, {encoding:'utf8'} );
+	return go( data );
+}
+
+// 不論從 stdin or file 取得檔案，最終都到這裏處理
+function go( data ) {
+
+	return new Promise( (resolve, reject) => {
 
 		var arr = data.split( '\n' );
 
@@ -45,52 +107,58 @@ function readFile( name ) {
 
 		} )
 
-
 		// 刪掉最後一筆，它是 'Found 4 errors'
-		errSets.splice(errSets.length-1, 1);
+		errSets.splice( errSets.length - 1, 1 );
 
 		let errCount = errSets.length;
 
 		// 將 errSets[] 內每筆錯誤送去 parse
-		var arrErrorObj = errSets.reduce(
-			( ac, item ) => {
-				// console.log( '\n\n來了item: ', item );
-				// return item;
-				return [...ac, parse( item )];
-			},
+		arrErrorObj = errSets.reduce(
+				( ac, item ) => {
+					// console.log( '\n\n來了item: ', item );
+					// return item;
+					return [...ac, parse( item )];
+				},
 
-			[]
-		);
+				[]
+			);
 
-		console.log( 'arrErrorObj: ', JSON.stringify( arrErrorObj, null, 2 ) );
+		// console.log( 'arrErrorObj: ', JSON.stringify( arrErrorObj, null, 2 ) );
 
-		var arrMessages = arrErrorObj.reduce(
-			( ac, item ) => {
-				// console.log( '\n\n來了item: ', item );
-				// return item;
-				return [...ac, getTextMessage( item )];
-			},
+		// 應用：從 errObj 內生成錯誤訊息字串，方便 screen print 或寫出檔案
+		arrMessages = arrErrorObj.reduce(
+				( ac, item ) => {
+					// console.log( '\n\n來了item: ', item );
+					// return item;
+					return [...ac, getTextMessage( item )];
+				},
 
-			[]
-		);
+				[]
+			);
 
-		arrErrorObj.push({total: errCount});
-		arrMessages.unshift(`Total Errors: ${errCount}\n`);
 
-		writeFile( arrMessages.join('') );
+		// 偷加上日期與錯誤數量等 meta data
+		let date = 'Created: ' + new Date().toString() + '\n';
+		arrErrorObj = [ { createdDate: date }, {total: errCount}, ...arrErrorObj ];
+		arrMessages = [ date, `Total Errors: ${errCount}`, ...arrMessages];
+
+		writeFile( arrMessages.join( '' ) );
 
 		// console.log( '\n\n>>arrMessages: ', JSON.stringify(arrMessages, null, 2) );
-		console.log( '錯誤數量:', errCount );
-	} );
+		// console.log( '錯誤數量:', errCount );
+
+		resolve({arrErrorObj, arrMessages})
+	})
 }
 
-function writeFile( data ){
-	data = 'Created: ' + new Date().toString() + '\n' + data;
+function writeFile( data ) {
+	// data = 'Created: ' + new Date().toString() + '\n' + data;
+
 	// data = 'Total Errors:' + Date.now() + '\n' + data;
-	fs.writeFile('flow-results.txt', data, function (err) {
-	  if (err) throw err;
-	  console.log('file saved!');
-	});
+	fs.writeFile( 'flow-results.txt', data, function( err ) {
+		if ( err ) throw err;
+		console.log( 'file saved!' );
+	} );
 }
 
 // 將每筆錯誤轉成 errObj{} 型式，方便將來各種應用
@@ -101,6 +169,7 @@ function parse( arr ) {
 			return {invoke: parseLine( arr[2] ), receive: parseLine( arr[4] ), msg: null };
 		case 2:
 			return {invoke: parseLine( arr[0] ), receive: null, msg: arr[1] };
+
 		// case 1:
 		// 	return {invoke: null, receive: null, msg: arr[0]};
 	}
@@ -122,10 +191,11 @@ function getTextMessage( errObj ) {
 			Error:
 			  ${invoke.errFile}, line ${invoke.errNumLine}
 			  ${invoke.errLine}
-			  ${spaces}↑ expecting "${receive.errType}", got "${invoke.errType}"\n
+			  ${spaces}↑ expecting "${receive.errType}", got "${invoke.errType}"
+
 			  From:
-			    ${receive.errFile}, line ${receive.errNumLine}
-			    ${receive.errLine}
+			  ${receive.errFile}, line ${receive.errNumLine}
+			  ${receive.errLine}
 		`;
 
 	}else if ( invoke && !receive ) {
