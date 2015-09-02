@@ -1,4 +1,4 @@
-Created: Wed Sep 02 2015 20:42:50 GMT+0800 (CST)
+Created: Wed Sep 02 2015 20:46:07 GMT+0800 (CST)
 Total Errors: 4
 [35m[1m> Error:[22m[39m
   /Users/jlu/gitrepos/html/flowery/sample.js, line [35m3[39m
