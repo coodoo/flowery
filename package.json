@@ -27,12 +27,12 @@
   "preferGlobal": true,
   "main": "./flowery",
   "scripts": {
-    "lint": "",
+    "build": "babel --stage 0 -o ./build/flowery.js flowery.js",
     "test": "",
     "start": "babel-node flowery"
   },
   "bin": {
-    "flowery": "./flowery.js"
+    "flowery": "./build/flowery.js"
   },
   "repository": {
     "type": "git",

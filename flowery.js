@@ -1,4 +1,8 @@
-process.stdout.write( '\u001B[2J\u001B[0;0f' );
+#!/usr/bin/env node
+
+if( process.env.NODE_ENV !== 'production'){
+	process.stdout.write( '\u001B[2J\u001B[0;0f' );
+}
 
 /*
 
