@@ -39,7 +39,9 @@
     "url": "git+https://github.com/coodoo/flowery.git"
   },
   "homepage": "https://github.com/coodoo/flowery",
-  "dependencies": {},
+  "dependencies": {
+    "colors": "^1.1.2"
+  },
   "devDependencies": {},
   "bugs": {
     "url": "https://github.com/coodoo/flowery/issues"

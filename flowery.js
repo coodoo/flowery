@@ -26,6 +26,9 @@ Usage
 
 import fs from 'fs';
 import path from 'path';
+import colors from 'colors';
+
+console.log( 'color for fun'.rainbow );
 
 let arrErrorObj, arrMessages;
 
@@ -121,7 +124,6 @@ function go( data ) {
 		arrErrorObj = errSets.reduce(
 				( ac, item ) => {
 					// console.log( '\n\n來了item: ', item );
-					// return item;
 					return [...ac, parse( item )];
 				},
 
@@ -134,7 +136,6 @@ function go( data ) {
 		arrMessages = arrErrorObj.reduce(
 				( ac, item ) => {
 					// console.log( '\n\n來了item: ', item );
-					// return item;
 					return [...ac, getTextMessage( item )];
 				},
 

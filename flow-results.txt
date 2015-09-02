@@ -1,0 +1,29 @@
+Created: Wed Sep 02 2015 20:10:14 GMT+0800 (CST)
+Total Errors: 4
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 3
+  import bar from './zzz2';
+  ↑ Required module not found
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 14
+  t1 = '00';
+  ↑ class property initializers are not yet supported
+
+> Error.red:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+  var k = foo( 33, 'a22' );
+               ↑ expecting "string", got "number"
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  function foo( bar:string, coo:number ):Array<string> {
+
+> Error.red:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+  var k = foo( 33, 'a22' );
+                   ↑ expecting "number", got "string"
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  function foo( bar:string, coo:number ):Array<string> {
