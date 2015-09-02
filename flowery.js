@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-if( process.env.NODE_ENV !== 'production'){
+if( process.env.NODE_ENV && process.env.NODE_ENV !== 'production'){
 	process.stdout.write( '\u001B[2J\u001B[0;0f' );
 }
 
@@ -10,15 +10,15 @@ Usage
 
 1. CLI - file
 
-	$ babel-node code log.txt
+	$ babel-node flowery log.txt
 
 2. CLI - pipe
 
-	$ flow | babel-node code
+	$ flow | babel-node flowery
 
 3. API
 
-	import readFile from './code';
+	import readFile from './flowery';
 	readFile('z.txt').then( result => {console.log(result)}) // {arrErrorObj: [...], arrMessages: [...] }
 
 */
@@ -31,13 +31,14 @@ let arrErrorObj, arrMessages;
 
 if ( process.argv.length > 2 ) {
 	// 給傳檔案名稱的話，就直接開檔，這應該是 flow 生成的 log 檔
-	readFile( process.argv[2] );
+	readFile( process.argv[2] )
+	.then( result => console.log( result.arrMessages.join('\n') ))
 }else {
 	readStdin()
 	.then( data => {
 		// console.log( 'stdin data: ', data );
 		go( data )
-		.then( result => console.log( 'result: ', result.arrMessages.join('\n') ))
+		.then( result => console.log( result.arrMessages.join('\n') ))
 	} );
 }
 
@@ -161,7 +162,7 @@ function writeFile( data ) {
 	// data = 'Total Errors:' + Date.now() + '\n' + data;
 	fs.writeFile( 'flow-results.txt', data, function( err ) {
 		if ( err ) throw err;
-		console.log( 'file saved!' );
+		console.log( '\nflow-results.txt saved!' );
 	} );
 }
 
