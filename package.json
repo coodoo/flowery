@@ -1,6 +1,6 @@
 {
   "name": "flowery",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "Jeremy Lu",
     "email": "jeremy@pubulous.com"
@@ -31,7 +31,7 @@
     "test": "",
     "start": "babel-node flowery"
   },
-  "bin": "./flowery",
+  "bin": "./flowerybin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/coodoo/flowery.git"
