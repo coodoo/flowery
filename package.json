@@ -31,7 +31,9 @@
     "test": "",
     "start": "babel-node flowery"
   },
-  "bin": ".bin/flowerybin",
+  "bin" : {
+    "flowery" : "./flowery.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/coodoo/flowery.git"
