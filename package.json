@@ -1,6 +1,6 @@
 {
   "name": "flowery",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": {
     "name": "Jeremy Lu",
     "email": "jeremy@pubulous.com"
@@ -31,8 +31,8 @@
     "test": "",
     "start": "babel-node flowery"
   },
-  "bin" : {
-    "flowery" : "./flowery.js"
+  "bin": {
+    "flowery": "./flowery.js"
   },
   "repository": {
     "type": "git",
