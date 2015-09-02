@@ -1,29 +1,29 @@
-Created: Wed Sep 02 2015 20:10:14 GMT+0800 (CST)
+Created: Wed Sep 02 2015 20:42:50 GMT+0800 (CST)
 Total Errors: 4
-> Error:
-  /Users/jlu/gitrepos/html/flowery/sample.js, line 3
+[35m[1m> Error:[22m[39m
+  /Users/jlu/gitrepos/html/flowery/sample.js, line [35m3[39m
   import bar from './zzz2';
-  ↑ Required module not found
+  [37m↑[39m [37mRequired module not found[39m
 
-> Error:
-  /Users/jlu/gitrepos/html/flowery/sample.js, line 14
+[35m[1m> Error:[22m[39m
+  /Users/jlu/gitrepos/html/flowery/sample.js, line [35m14[39m
   t1 = '00';
-  ↑ class property initializers are not yet supported
+  [37m↑[39m [37mclass property initializers are not yet supported[39m
 
-> Error.red:
-  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+[35m[1m> Error:[22m[39m
+  /Users/jlu/gitrepos/html/flowery/sample.js, line [35m22[39m
   var k = foo( 33, 'a22' );
-               ↑ expecting "string", got "number"
+               [37m↑ expecting[39m [33mstring[39m, [37mgot[39m [33mnumber[39m
 
   From:
-  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  /Users/jlu/gitrepos/html/flowery/sample.js, line [35m7[39m
   function foo( bar:string, coo:number ):Array<string> {
 
-> Error.red:
-  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+[35m[1m> Error:[22m[39m
+  /Users/jlu/gitrepos/html/flowery/sample.js, line [35m22[39m
   var k = foo( 33, 'a22' );
-                   ↑ expecting "number", got "string"
+                   [37m↑ expecting[39m [33mnumber[39m, [37mgot[39m [33mstring[39m
 
   From:
-  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  /Users/jlu/gitrepos/html/flowery/sample.js, line [35m7[39m
   function foo( bar:string, coo:number ):Array<string> {

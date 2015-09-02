@@ -26,7 +26,7 @@ Usage
 
 import fs from 'fs';
 import path from 'path';
-import colors from 'colors';
+import chalk from 'chalk';
 
 console.log( 'color for fun'.rainbow );
 
@@ -194,13 +194,13 @@ function getTextMessage( errObj ) {
 		var spaces = new Array( invoke.errStart ).join( ' ' );
 
 		template = `
-			> Error:
-			  ${invoke.errFile}, line ${invoke.errNumLine}
+			${chalk.magenta.bold('> Error:')}
+			  ${invoke.errFile}, line ${chalk.magenta(invoke.errNumLine)}
 			  ${invoke.errLine}
-			  ${spaces}↑ expecting "${receive.errType}", got "${invoke.errType}"
+			  ${spaces}${chalk.white('↑ expecting')} ${chalk.yellow(receive.errType)}, ${chalk.white('got')} ${chalk.yellow(invoke.errType)}
 
 			  From:
-			  ${receive.errFile}, line ${receive.errNumLine}
+			  ${receive.errFile}, line ${chalk.magenta(receive.errNumLine)}
 			  ${receive.errLine}
 		`;
 
@@ -209,10 +209,10 @@ function getTextMessage( errObj ) {
 		// invoke = parseLine(arr[0]);
 
 		template = `
-			> Error:
-			  ${invoke.errFile}, line ${invoke.errNumLine}
+			${chalk.magenta.bold('> Error:')}
+			  ${invoke.errFile}, line ${chalk.magenta(invoke.errNumLine)}
 			  ${invoke.errLine}
-			  ↑ ${msg}
+			  ${chalk.white('↑')} ${chalk.white(msg)}
 		`;
 	}
 
