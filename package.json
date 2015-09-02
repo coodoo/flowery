@@ -28,7 +28,7 @@
   "main": "./flowery",
   "scripts": {
     "build": "babel --stage 0 -o ./build/flowery.js flowery.js",
-    "test": "",
+    "publish": "npm version patch& npm publish",
     "start": "babel-node flowery"
   },
   "bin": {
