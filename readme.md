@@ -66,9 +66,7 @@ Flowery is written in `ES2015`, hence it's required to run build to generate `ES
 Roadmap
 -------
 
-1. Make it colorful, I've yet to figure out how to make colorful text in console
-
-2. A Sublime Text Editor package which mark errors in place and provide tooltips when mouse hovered it. (Total python noob here, any help would be highly appreciated)
+- A Sublime Text Editor package which mark errors in place and provide tooltips when mouse hovered it. (Total python noob here, any help would be highly appreciated)
 
 See [discussion here](https://github.com/facebook/flow/issues/768).
 
