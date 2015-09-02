@@ -162,7 +162,7 @@ function writeFile( data ) {
 	// data = 'Total Errors:' + Date.now() + '\n' + data;
 	fs.writeFile( 'flow-results.txt', data, function( err ) {
 		if ( err ) throw err;
-		console.log( '\nflow-results.txt saved!' );
+		console.log( '\nflow-results.txt saved.' );
 	} );
 }
 
@@ -193,7 +193,7 @@ function getTextMessage( errObj ) {
 		var spaces = new Array( invoke.errStart ).join( ' ' );
 
 		template = `
-			Error:
+			> Error:
 			  ${invoke.errFile}, line ${invoke.errNumLine}
 			  ${invoke.errLine}
 			  ${spaces}↑ expecting "${receive.errType}", got "${invoke.errType}"
@@ -208,7 +208,7 @@ function getTextMessage( errObj ) {
 		// invoke = parseLine(arr[0]);
 
 		template = `
-			Error:
+			> Error:
 			  ${invoke.errFile}, line ${invoke.errNumLine}
 			  ${invoke.errLine}
 			  ↑ ${msg}
