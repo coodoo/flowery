@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-if( process.env.NODE_ENV && process.env.NODE_ENV !== 'production'){
+if ( process.env.NODE_ENV && process.env.NODE_ENV !== 'production' ) {
 	process.stdout.write( '\u001B[2J\u001B[0;0f' );
 }
 
@@ -23,7 +23,6 @@ Usage
 
 */
 
-
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
@@ -33,13 +32,23 @@ let arrErrorObj, arrMessages;
 if ( process.argv.length > 2 ) {
 	// 給傳檔案名稱的話，就直接開檔，這應該是 flow 生成的 log 檔
 	readFile( process.argv[2] )
-	.then( result => console.log( result.arrMessages.join('\n') ))
+	.then( data => {
+		if ( data.type == 'json' ) {
+			handleJsonData( data ).then( result => {
+				console.log( '\nresult: \n', require('util').inspect( result, false, 2, true) );
+				debugger;
+			});
+		}else {
+			handleRawData( data );
+		}
+	} )
+
 }else {
 	readStdin()
 	.then( data => {
 		// console.log( 'stdin data: ', data );
-		go( data )
-		.then( result => console.log( result.arrMessages.join('\n') ))
+		handleRawData( data )
+		.then( result => console.log( result.arrMessages.join( '\n' ) ) )
 	} );
 }
 
@@ -47,11 +56,28 @@ if ( process.argv.length > 2 ) {
 // $ flow | babel-node code.js
 function readStdin() {
 	return new Promise( ( resolve, reject ) => {
-		let tmp;
+
+		let tmp, decoded;
+
 		process.stdin.setEncoding( 'utf8' );
+
 		process.stdin.on( 'readable', function() {
+
 			tmp = process.stdin.read();
+
 			if ( tmp !== null ) {
+
+				// 有讀到東西，但有可能是 JSON 或 raw lines
+
+				try {
+					decoded = JSON.parse( tmp );
+
+					console.log( '\ndecoded: \n', require( 'util' ).inspect( decoded, false, 6, true ) );
+
+				}catch ( err ) {
+					console.log( '不是 JSON 喔' );
+				}
+
 				resolve( tmp );
 
 				// console.log( '\njson: \n', require('util').inspect( JSON.parse(tmp), false, 6, true) );
@@ -69,16 +95,155 @@ function readStdin() {
 	} )
 }
 
-// 透過 cli 指定 file，可直接開啟
-export default function readFile( name ) {
-	let data = fs.readFileSync( name, {encoding:'utf8'} );
-	return go( data );
+function parseRawOrJson( data ) {
+	let content, type;
+	try {
+		content = JSON.parse( data );
+		type = 'json';
+	}catch ( e ) {
+		console.log( 'parseRawOrJson 出錯: ', e.stack );
+		type = 'raw';
+	}
+
+	return {
+		type: type,
+		data: content ? content : data,
+	}
 }
 
-// 不論從 stdin or file 取得檔案，最終都到這裏處理
-function go( data ) {
+// 透過 API 指定 file，可直接開啟
+export default function readFile( name ) {
+	let data;
+	return new Promise( ( resolve, reject ) => {
+		data = fs.readFileSync( name, {encoding:'utf8'} );
+		data = parseRawOrJson( data );
+		resolve( data )
+	} )
 
-	return new Promise( (resolve, reject) => {
+	// return handleRawData( data );
+}
+
+function handleJsonData( payload ) {
+	console.log( '進到 handleJsonData: ', payload );
+	let data = payload.data;
+	let errors = data.errors;
+	// debugger;
+
+	if ( data.passed ) return Promise.resolve( 'no errors' );
+
+	return new Promise( ( resolve, reject ) => {
+
+		let invoke, receive;
+
+		errors = errors.map( item => {
+
+			let arrMessage = item.message;
+
+			// debugger;
+
+			switch ( arrMessage.length ) {
+
+				case 1:
+					invoke = arrMessage[0];
+					 var msg = invoke.descr.split( '\n' );
+					 var o = {
+						errTarget: msg[0],
+						errMsg: msg[1],
+						errPath: invoke.path,
+						errLine: invoke.line,
+						errStart: invoke.start,
+						errEnd: invoke.end,
+					 }
+					 return {invoke: o, receive: null};
+
+				case 2:
+					invoke = arrMessage[0];
+					receive = arrMessage[1]; // 用不到
+
+					var msg = invoke.descr.split( '\n' );
+					var o = {
+						errTarget: msg[0],
+						errMsg: msg[1],
+						errPath: invoke.path,
+						errLine: invoke.line,
+						errStart: invoke.start,
+						errEnd: invoke.end,
+					}
+
+					return {invoke: o, receive: null};
+
+				case 3:
+
+					if ( arrMessage[1].descr.indexOf( 'type is incompatible' ) != -1 ) {
+
+						// +TYPE ERROR+
+						invoke = arrMessage[1];
+						receive = arrMessage[2];
+
+						msg = invoke.descr.split( '\n' );
+						var o1 = {
+							errTarget: msg[0],
+							errMsg: msg[1],
+							errPath: invoke.path,
+							errLine: invoke.line,
+							errStart: invoke.start,
+							errEnd: invoke.end,
+						}
+
+						var o2 = {
+							errTarget: receive.descr,
+							errMsg: null,
+							errPath: receive.path,
+							errLine: receive.line,
+							errStart: receive.start,
+							errEnd: receive.end,
+						}
+
+						return {invoke: o1, receive: o2};
+
+					}else {
+
+						// +INVERTED+
+						invoke = arrMessage[2];
+						receive = arrMessage[1];
+
+						msg = receive.descr.split( '\n' );
+						var o1 = {
+							errTarget: msg[0],
+							errMsg: msg[1],
+							errPath: receive.path,
+							errLine: receive.line,
+							errStart: receive.start,
+							errEnd: receive.end,
+						}
+
+						var o2 = {
+							errTarget: invoke.descr,
+							errMsg: null,
+							errPath: invoke.path,
+							errLine: invoke.line,
+							errStart: invoke.start,
+							errEnd: invoke.end,
+						}
+					}
+
+					return {invoke: o1, receive: o2};
+
+			}
+		} )
+
+		console.log( '八組跑完了' );
+		resolve(errors);
+
+	} )
+}
+
+// 人工 parser，暫時不用
+// parse non-json data
+// 不論從 stdin or file 取得檔案，最終都到這裏處理
+function handleRawData( data ) {
+
+	return new Promise( ( resolve, reject ) => {
 
 		var arr = data.split( '\n' );
 
@@ -148,19 +313,18 @@ function go( data ) {
 				[]
 			);
 
-
 		// 偷加上日期與錯誤數量等 meta data
 		let date = 'Created: ' + new Date().toString() + '\n';
-		arrErrorObj = [ { createdDate: date }, {total: errCount}, ...arrErrorObj ];
-		arrMessages = [ date, `Total Errors: ${errCount}`, ...arrMessages];
+		arrErrorObj = [{ createdDate: date }, {total: errCount}, ...arrErrorObj];
+		arrMessages = [date, `Total Errors: ${errCount}`, ...arrMessages];
 
 		writeFile( arrMessages.join( '' ) );
 
 		// console.log( '\n\n>>arrMessages: ', JSON.stringify(arrMessages, null, 2) );
 		// console.log( '錯誤數量:', errCount );
 
-		resolve({arrErrorObj, arrMessages})
-	})
+		resolve( {arrErrorObj, arrMessages} )
+	} )
 }
 
 function writeFile( data ) {
@@ -210,13 +374,13 @@ function getTextMessage( errObj ) {
 		var spaces = new Array( invoke.errStart ).join( ' ' );
 
 		template = `
-			${chalk.magenta.bold('> Error:')}
-			  ${invoke.errFile}, line ${chalk.magenta(invoke.errNumLine)}
+			> Error:
+			  ${invoke.errFile}, line ${invoke.errNumLine}
 			${invoke.errLine}
 			${spaces}↑ ${errType}: ${msg}
 
 			  From:
-			  ${receive.errFile}, line ${chalk.magenta(receive.errNumLine)}
+			  ${receive.errFile}, line ${receive.errNumLine}
 			  ${receive.errLine}
 		`;
 
@@ -231,13 +395,13 @@ function getTextMessage( errObj ) {
 		var spaces = new Array( invoke.errStart ).join( ' ' );
 
 		template = `
-			${chalk.magenta.bold('> Error:')}
-			  ${invoke.errFile}, line ${chalk.magenta(invoke.errNumLine)}
+			> Error:
+			  ${invoke.errFile}, line ${invoke.errNumLine}
 			${invoke.errLine}
-			${spaces}${chalk.white('↑ expecting')} ${chalk.yellow(receive.errType)}, ${chalk.white('got')} ${chalk.yellow(invoke.errType)}
+			${spaces}${'↑ expecting'} ${receive.errType}, got ${invoke.errType}
 
 			  From:
-			  ${receive.errFile}, line ${chalk.magenta(receive.errNumLine)}
+			  ${receive.errFile}, line ${receive.errNumLine}
 			  ${receive.errLine}
 		`;
 
@@ -246,10 +410,10 @@ function getTextMessage( errObj ) {
 		// invoke = parseLine(arr[0]);
 
 		template = `
-			${chalk.magenta.bold('> Error:')}
-			  ${invoke.errFile}, line ${chalk.magenta(invoke.errNumLine)}
+			${chalk.magenta.bold( '> Error:' )}
+			  ${invoke.errFile}, line ${chalk.magenta( invoke.errNumLine )}
 			  ${invoke.errLine}
-			  ${chalk.white('↑')} ${chalk.white(msg)}
+			  ${chalk.white( '↑' )} ${chalk.white( msg )}
 		`;
 	}
 
