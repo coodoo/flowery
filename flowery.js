@@ -28,8 +28,6 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 
-console.log( 'color for fun'.rainbow );
-
 let arrErrorObj, arrMessages;
 
 if ( process.argv.length > 2 ) {
@@ -55,6 +53,8 @@ function readStdin() {
 			tmp = process.stdin.read();
 			if ( tmp !== null ) {
 				resolve( tmp );
+
+				// console.log( '\njson: \n', require('util').inspect( JSON.parse(tmp), false, 6, true) );
 
 				// console.log( 'chunk: ', chunk );
 			}else {
@@ -83,10 +83,14 @@ function go( data ) {
 		var arr = data.split( '\n' );
 
 		// errSets[] 內每組代表一個錯誤
+		//
 		// 最後一筆為 total errors
+		//
 		// 長度為 2 的，代表為 simple error
 		// 	- 第一行是檔案
 		// 	- 第二行是錯誤
+		//
+		// 長度為 3 的，代表為 property length
 		//
 		// 長度為 4 的，代表為 argument error
 		// 	- 第一行為檔案
@@ -117,6 +121,8 @@ function go( data ) {
 
 		// 刪掉最後一筆，它是 'Found 4 errors'
 		errSets.splice( errSets.length - 1, 1 );
+
+		// console.log( '\nerrSet: \n', require('util').inspect( errSets, false, 2, true) );
 
 		let errCount = errSets.length;
 
@@ -171,13 +177,16 @@ function writeFile( data ) {
 // 例如在 sublime 內顯示於 tooltip 內
 function parse( arr ) {
 	switch ( arr.length ){
+
 		case 5:
 			return {invoke: parseLine( arr[2] ), receive: parseLine( arr[4] ), msg: null };
+
+		case 3:
+			return {invoke: parseLine( arr[0] ), receive: parseLine( arr[2] ), msg: arr[1] };
+
 		case 2:
 			return {invoke: parseLine( arr[0] ), receive: null, msg: arr[1] };
 
-		// case 1:
-		// 	return {invoke: null, receive: null, msg: arr[0]};
 	}
 }
 
@@ -187,24 +196,52 @@ function getTextMessage( errObj ) {
 	let invoke = errObj.invoke;
 	let receive = errObj.receive;
 	let msg = errObj.msg;
+	let errType = invoke.errType;
 	let template, result;
 
-	if ( invoke && receive ) {
+	// console.log( '\ninvokeObj: ', invoke, '\n\nreceive: ', receive, '\nmsg: ', msg );
+
+	if ( invoke && receive && msg ) {
+		// 3 行的
+		// /Users/jlu/gitrepos/html/flowery/dynamic.js:4:10,17: property length
+		// Property not found in
+		// /private/tmp/flow/flowlib_35b40aae/core.js:70:1,87:1: Number
 
 		var spaces = new Array( invoke.errStart ).join( ' ' );
 
 		template = `
 			${chalk.magenta.bold('> Error:')}
 			  ${invoke.errFile}, line ${chalk.magenta(invoke.errNumLine)}
-			  ${invoke.errLine}
-			  ${spaces}${chalk.white('↑ expecting')} ${chalk.yellow(receive.errType)}, ${chalk.white('got')} ${chalk.yellow(invoke.errType)}
+			${invoke.errLine}
+			${spaces}↑ ${errType}: ${msg}
 
 			  From:
 			  ${receive.errFile}, line ${chalk.magenta(receive.errNumLine)}
 			  ${receive.errLine}
 		`;
 
-	}else if ( invoke && !receive ) {
+	} else if ( invoke && receive && !msg ) {
+		// 5 行的
+		// /Users/jlu/gitrepos/html/flowery/sample.js:22:9,24: function call
+		// Error:
+		// /Users/jlu/gitrepos/html/flowery/sample.js:22:14,15: number
+		// This type is incompatible with
+		// /Users/jlu/gitrepos/html/flowery/sample.js:7:19,24: string
+
+		var spaces = new Array( invoke.errStart ).join( ' ' );
+
+		template = `
+			${chalk.magenta.bold('> Error:')}
+			  ${invoke.errFile}, line ${chalk.magenta(invoke.errNumLine)}
+			${invoke.errLine}
+			${spaces}${chalk.white('↑ expecting')} ${chalk.yellow(receive.errType)}, ${chalk.white('got')} ${chalk.yellow(invoke.errType)}
+
+			  From:
+			  ${receive.errFile}, line ${chalk.magenta(receive.errNumLine)}
+			  ${receive.errLine}
+		`;
+
+	} else if ( invoke && !receive ) {
 
 		// invoke = parseLine(arr[0]);
 
