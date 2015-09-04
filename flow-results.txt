@@ -1,2 +1,66 @@
-Created: Thu Sep 03 2015 17:28:25 GMT+0800 (CST)
-Total Errors: 0
+Created: Fri Sep 04 2015 14:18:22 GMT+0800 (CST)
+Total Errors: 8
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 3
+  import bar from './zzz2';
+                  ↑ Required module not found: ./zzz2
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 14
+  t1 = '00';
+   ↑ class property initializers are not yet supported: 
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+  var k = foo( 33, 'a22' );
+               ↑ type should be string, got number
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  function foo( bar:string, coo:number ):Array<string> {
+                    ↑ triggered here
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+  var k = foo( 33, 'a22' );
+                   ↑ type should be number, got string
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  function foo( bar:string, coo:number ):Array<string> {
+                                ↑ triggered here
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 32
+  barr("Hello, world!");
+       ↑ type should be number, got string
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 29
+    return x*10;
+           ↑ triggered here
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 38
+  var total = lent("Hello") + lent(null);
+                                   ↑ possibly null value
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 35
+    return x.length;
+           ↑ Property _length_ cannot be accessed on possibly null value
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 48
+  total([1, 2, 3, "Hello"]);
+                  ↑ type should be number, got string
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 40
+  function total(numbers: Array<number>) {
+                                ↑ triggered here
+
+> Error:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 51
+    return x.length;
+           ↑ Property length not found

@@ -40,7 +40,8 @@
   },
   "homepage": "https://github.com/coodoo/flowery",
   "dependencies": {
-    "chalk": "^1.1.1"
+    "chalk": "^1.1.1",
+    "exec": "^0.2.1"
   },
   "devDependencies": {},
   "bugs": {

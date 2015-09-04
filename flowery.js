@@ -4,6 +4,8 @@ if ( process.env.NODE_ENV && process.env.NODE_ENV !== 'production' ) {
 	process.stdout.write( '\u001B[2J\u001B[0;0f' );
 }
 
+process.stdout.write( '\u001B[2J\u001B[0;0f' );
+
 /*
 
 Usage
@@ -27,429 +29,434 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 
-let arrErrorObj, arrMessages;
+const SIMPLE = 1;
+const NORMAL = 2;
+const TYPE_ERROR = 3;
+const INVERTED = 4;
+
+let arrMessages, results;
 
 if ( process.argv.length > 2 ) {
-	// 給傳檔案名稱的話，就直接開檔，這應該是 flow 生成的 log 檔
+	// 有傳入檔案名稱的話，代表已有 flow 生成的 json log txt，可直接開檔
 	readFile( process.argv[2] )
 	.then( data => {
-		if ( data.type == 'json' ) {
-			handleJsonData( data ).then( result => {
-				console.log( '\nresult: \n', require('util').inspect( result, false, 2, true) );
-				debugger;
-			});
+		debugger;
+
+		go(data);
+		/*let arrErrors = generateErrorObjects( data )
+
+		if ( arrErrors ) {
+			arrMessages = generateErrorMessages( arrErrors );
+			results = arrMessages.join( '' );
+			writeFile( results );
+			console.log( results );
+			return results;
 		}else {
-			handleRawData( data );
-		}
+			console.log( 'No Error!' );
+			return 'No Error!';
+		}*/
+
+	} );
+
+} else {
+
+	readStdin()
+
+	.then( data => {
+
+		debugger;
+		go(data);
 	} )
 
-}else {
-	readStdin()
-	.then( data => {
-		// console.log( 'stdin data: ', data );
-		handleRawData( data )
-		.then( result => console.log( result.arrMessages.join( '\n' ) ) )
-	} );
+	.catch(err => {
+		debugger;
+		console.log( '要跑 wrapper 囉: ', err );
+		runner();
+	})
+}
+
+function go(data){
+
+	// console.log( 'stdin data: ', data );
+	let arrErrors = generateErrorObjects( data )
+
+	if ( arrErrors ) {
+		arrMessages = generateErrorMessages( arrErrors );
+		results = arrMessages.join( '' );
+		writeFile( results );
+		console.log( results );
+		return results;
+	}else {
+		console.log( 'No Error!' );
+		return 'No Error!';
+	}
+}
+
+function runner(){
+
+	var exec = require('exec');
+	// var exec = require('child_process').execFile;
+
+	exec(['flow', '--json'], (err, out, code) => {
+	// exec('flow', ['--json'], (err, out, code) => {
+	  // if (err instanceof Error)
+	  //   throw err;
+	  // process.exit(code);
+
+	  console.log( '結果: ', arguments );
+	  if(err){
+	  	return console.log('ruuner err: ', err);
+	  }
+
+	  let data = parseJson(out);
+
+	  if(!data) return process.exit(1);
+
+	  // console.log( 'runner data: ', data );
+
+	  go(data);
+	});
+
+	// console.log( 'runner 結果: ', child );
 }
 
 // 如果是透過 cli pipe 進來的，就從 stdin 讀資料
 // $ flow | babel-node code.js
 function readStdin() {
-	return new Promise( ( resolve, reject ) => {
 
-		let tmp, decoded;
+	return new Promise( ( resolve, reject ) => {
+		let content;
 
 		process.stdin.setEncoding( 'utf8' );
-
 		process.stdin.on( 'readable', function() {
 
-			tmp = process.stdin.read();
+			content = process.stdin.read();
 
-			if ( tmp !== null ) {
+			if ( content !== null ) {
 
-				// 有讀到東西，但有可能是 JSON 或 raw lines
+				// 有讀到東西，但有可能是 JSON
+				content = parseJson(content)
 
-				try {
-					decoded = JSON.parse( tmp );
+				if(!content) return process.exit(1);
 
-					console.log( '\ndecoded: \n', require( 'util' ).inspect( decoded, false, 6, true ) );
+				resolve( content );
 
-				}catch ( err ) {
-					console.log( '不是 JSON 喔' );
-				}
-
-				resolve( tmp );
-
-				// console.log( '\njson: \n', require('util').inspect( JSON.parse(tmp), false, 6, true) );
-
-				// console.log( 'chunk: ', chunk );
-			}else {
-				resolve( null );
+			} else {
+				reject( 'no data' );
 				process.stdin.end(); // pause()
 			}
 		} );
-
-		// process.stdin.on( 'end', function() {
-		// 	resolve(chunk)
-		// } );
 	} )
 }
 
-function parseRawOrJson( data ) {
-	let content, type;
+// 將 json string 轉回 js obj
+function parseJson( data ) {
+
+	let content;
+
 	try {
 		content = JSON.parse( data );
-		type = 'json';
 	}catch ( e ) {
-		console.log( 'parseRawOrJson 出錯: ', e.stack );
-		type = 'raw';
+		console.error('Invalid JSON format, did you forget to add "--json" argument to flow?');
+		return null;
 	}
 
-	return {
-		type: type,
-		data: content ? content : data,
-	}
+	return content;
 }
 
-// 透過 API 指定 file，可直接開啟
+// 讀取檔案，並解析 JSON 後返還結果
+// 也可透過 API 傳入檔案(效果等於 pipe)
 export default function readFile( name ) {
-	let data;
+
+	let data, content;
+
 	return new Promise( ( resolve, reject ) => {
+
 		data = fs.readFileSync( name, {encoding:'utf8'} );
-		data = parseRawOrJson( data );
-		resolve( data )
+
+		content = parseJson( data );
+
+		resolve( content );
+	} )
+}
+
+// 逐條將每個錯誤整理成 {invoke:..., receive:..., type:...} 正規化格式，方便日後使用
+function generateErrorObjects( {errors, passed, version} ) {
+
+	if ( passed ) return null;
+
+	let invoke, receive, lines, errLineContent, errSelection;
+
+	let arrErrors = errors.map( item => {
+
+		let arrMessage = item.message;
+
+		switch ( arrMessage.length ) {
+
+			case 1:
+				invoke = arrMessage[0];
+
+				 lines = getTargetFile( invoke.path );
+				 errLineContent = lines[invoke.line - 1];
+				 errSelection = errLineContent.substring( invoke.start - 1, invoke.end );
+
+				 let msg = invoke.descr.split( '\n' );
+
+				 let o = {
+					errTarget: msg[0],
+					errMsg: msg[1],
+					errPath: invoke.path,
+					errLine: invoke.line,
+					errLineContent,
+					errSelection,
+					errStart: invoke.start,
+					errEnd: invoke.end,
+				 }
+				 return {invoke: o, receive: null, type: SIMPLE };
+
+			case 2:
+				invoke = arrMessage[0];
+				receive = arrMessage[1]; // 用不到
+
+				lines = getTargetFile( invoke.path );
+				errLineContent = lines[invoke.line - 1];
+				errSelection = errLineContent.substring( invoke.start - 1, invoke.end );
+
+				// errMsg: "Property not found in" ← in 拿掉，將 length 組合進去
+				// errTarget: "property length" ← 取出 length 值
+				var msg = invoke.descr.split( '\n' );
+				let prop = msg[0].replace( 'property ', '' );
+				let _msg = msg[1].replace( 'Property', 'Property ' + prop ).replace( ' in', '' )
+
+				var o = {
+					errTarget: msg[0],
+					errMsg: _msg,
+					errPath: invoke.path,
+					errLine: invoke.line,
+					errLineContent,
+					errSelection,
+					errStart: invoke.start,
+					errEnd: invoke.end,
+				}
+
+				return {invoke: o, receive: null, type: NORMAL };
+
+			case 3:
+
+				if ( arrMessage[1].descr.indexOf( 'type is incompatible' ) != -1 ) {
+
+					// +TYPE ERROR+
+					invoke = arrMessage[1];
+					receive = arrMessage[2];
+
+					lines = getTargetFile( invoke.path );
+					errLineContent = lines[invoke.line - 1];
+					errSelection = errLineContent.substring( invoke.start - 1, invoke.end );
+
+					msg = invoke.descr.split( '\n' );
+					var o1 = {
+						errTarget: msg[0],
+						errMsg: msg[1],
+						errPath: invoke.path,
+						errLine: invoke.line,
+						errLineContent,
+						errSelection,
+						errStart: invoke.start,
+						errEnd: invoke.end,
+					}
+
+					var o2 = {
+						errTarget: receive.descr,
+						errMsg: null,
+						errPath: receive.path,
+						errLine: receive.line,
+						errLineContent: getTargetFile( receive.path )[receive.line - 1],
+						errSelection: null,
+						errStart: receive.start,
+						errEnd: receive.end,
+					}
+
+					return { invoke: o1, receive: o2, type: TYPE_ERROR };
+
+				}else {
+
+					// +INVERTED+
+					invoke = arrMessage[2];
+					receive = arrMessage[1];
+
+					lines = getTargetFile( invoke.path );
+					errLineContent = lines[invoke.line - 1];
+					errSelection = errLineContent.substring( invoke.start - 1, invoke.end );
+
+					msg = receive.descr.split( '\n' );
+					var o1 = {
+						errTarget: null,
+						errMsg: msg[1].replace( 'Property cannot be accessed on ', '' ),	// 人工改過
+						errPath: invoke.path,
+						errLine: invoke.line,
+						errLineContent: getTargetFile( invoke.path )[invoke.line - 1],
+						errSelection: null,
+						errStart: invoke.start,
+						errEnd: invoke.end,
+					}
+
+					lines = getTargetFile( receive.path );
+					errLineContent = lines[receive.line - 1];
+					errSelection = errLineContent.substring( receive.start - 1, receive.end );
+
+					// 將字串加工成易讀的訊息
+					msg = receive.descr.split( '\n' );
+
+					// msg[0] errTarget: "property length"
+					// msg[1] errMsg: "Property cannot be accessed on possibly null value"
+					let prop = msg[0].replace( 'property ', '' ); // 得到 length 字串
+					// prop = chalk.red(prop); // jxtest: 上色
+					prop = '_' + prop + '_';
+					msg[1] = msg[1].split( ' ' );
+					msg[1].splice( 1, 0, prop );
+					msg[1] = msg[1].join( ' ' );
+
+					var o2 = {
+						errTarget: msg[0],
+						errMsg: msg[1],
+						errPath: receive.path,
+						errLine: receive.line,
+						errLineContent: getTargetFile( receive.path )[receive.line - 1],
+						errSelection: null,
+						errStart: receive.start,
+						errEnd: receive.end,
+					}
+				}
+
+				return { invoke: o1, receive: o2, type: INVERTED };
+
+		}
 	} )
 
-	// return handleRawData( data );
+	// 加上日期與錯誤數量等 meta data
+	// let date = 'Created: ' + new Date().toString() + '\n';
+	// arrErrors = [{ createdDate: date }, {total: arrErrors.length}, ...arrErrors];
+
+	return arrErrors;
 }
 
-function handleJsonData( payload ) {
-	console.log( '進到 handleJsonData: ', payload );
-	let data = payload.data;
-	let errors = data.errors;
-	// debugger;
+// 將整理好的 errors arr 逐條生成易讀的錯誤訊息
+function generateErrorMessages( arrErrors ) {
 
-	if ( data.passed ) return Promise.resolve( 'no errors' );
+	// 應用：從 errObj 內生成錯誤訊息字串，方便 screen print 或寫出檔案
+	let arrMessages = arrErrors.reduce(
+			( ac, item ) => {
+				return [...ac, formatMessage( item )];
+			},
 
-	return new Promise( ( resolve, reject ) => {
+			[]
+		);
 
-		let invoke, receive;
+	// 偷加上日期與錯誤數量等 meta data
+	let date = 'Created: ' + new Date().toString() + '\n';
+	arrMessages = [date, `Total Errors: ${arrMessages.length}`, ...arrMessages];
 
-		errors = errors.map( item => {
+	// console.log( '\n\n>>arrMessages: ', JSON.stringify(arrMessages, null, 2) );
+	// console.log( '錯誤數量:', errCount );
 
-			let arrMessage = item.message;
+	return arrMessages;
+
+}
+
+// 這是 arrErrors 的一種應用，就是漂亮的打印出來
+// errObj: { invoke: o1, receive: o2, type: INVERTED }
+function formatMessage( {invoke, receive, type} ) {
+
+	let template, result, spaces, spaces2;
+
+	// console.log( '\ninvokeObj: ', invoke, '\n\nreceive: ', receive, '\ntype: ', type );
+	switch ( type ){
+
+		case SIMPLE:
+			spaces = new Array( invoke.errStart ).join( ' ' );
+
+			template = `
+				> Error:
+				  ${invoke.errPath}, line ${invoke.errLine}
+				  ${invoke.errLineContent}
+				  ${spaces}↑ ${invoke.errMsg}: ${invoke.errTarget}
+			`;
+
+			break;
+
+		case NORMAL:
+
+			spaces = new Array( invoke.errStart ).join( ' ' );
+			template = `
+				> Error:
+				  ${invoke.errPath}, line ${invoke.errLine}
+				  ${invoke.errLineContent}
+				  ${spaces}↑ ${invoke.errMsg}
+			`;
+
+			break;
+
+		case TYPE_ERROR:
 
 			// debugger;
 
-			switch ( arrMessage.length ) {
+			spaces = new Array( invoke.errStart ).join( ' ' );
+			spaces2 = new Array( receive.errStart ).join( ' ' );
 
-				case 1:
-					invoke = arrMessage[0];
-					 var msg = invoke.descr.split( '\n' );
-					 var o = {
-						errTarget: msg[0],
-						errMsg: msg[1],
-						errPath: invoke.path,
-						errLine: invoke.line,
-						errStart: invoke.start,
-						errEnd: invoke.end,
-					 }
-					 return {invoke: o, receive: null};
+			template = `
+				> Error:
+				  ${invoke.errPath}, line ${invoke.errLine}
+				  ${invoke.errLineContent}
+				  ${spaces}↑ type should be ${receive.errTarget}, got ${invoke.errTarget}
 
-				case 2:
-					invoke = arrMessage[0];
-					receive = arrMessage[1]; // 用不到
+				  From:
+				  ${receive.errPath}, line ${receive.errLine}
+				  ${receive.errLineContent}
+				  ${spaces2}↑ triggered here
+			`;
 
-					var msg = invoke.descr.split( '\n' );
-					var o = {
-						errTarget: msg[0],
-						errMsg: msg[1],
-						errPath: invoke.path,
-						errLine: invoke.line,
-						errStart: invoke.start,
-						errEnd: invoke.end,
-					}
+			break;
 
-					return {invoke: o, receive: null};
+		case INVERTED:
 
-				case 3:
+			// debugger;
+			spaces = new Array( invoke.errStart ).join( ' ' );
 
-					if ( arrMessage[1].descr.indexOf( 'type is incompatible' ) != -1 ) {
+			spaces2 = new Array( receive.errStart ).join( ' ' );
 
-						// +TYPE ERROR+
-						invoke = arrMessage[1];
-						receive = arrMessage[2];
+			// 特別之處: 這裏拿到的 inovke 與 receive 在早先整理時已被對調過
+			template = `
+				> Error:
+				  ${invoke.errPath}, line ${invoke.errLine}
+				  ${invoke.errLineContent}
+				  ${spaces}↑ ${invoke.errMsg}
 
-						msg = invoke.descr.split( '\n' );
-						var o1 = {
-							errTarget: msg[0],
-							errMsg: msg[1],
-							errPath: invoke.path,
-							errLine: invoke.line,
-							errStart: invoke.start,
-							errEnd: invoke.end,
-						}
+				  From:
+				  ${receive.errPath}, line ${receive.errLine}
+				  ${receive.errLineContent}
+				  ${spaces2}↑ ${receive.errMsg}
+			`;
+			break;
+	}
 
-						var o2 = {
-							errTarget: receive.descr,
-							errMsg: null,
-							errPath: receive.path,
-							errLine: receive.line,
-							errStart: receive.start,
-							errEnd: receive.end,
-						}
-
-						return {invoke: o1, receive: o2};
-
-					}else {
-
-						// +INVERTED+
-						invoke = arrMessage[2];
-						receive = arrMessage[1];
-
-						msg = receive.descr.split( '\n' );
-						var o1 = {
-							errTarget: msg[0],
-							errMsg: msg[1],
-							errPath: receive.path,
-							errLine: receive.line,
-							errStart: receive.start,
-							errEnd: receive.end,
-						}
-
-						var o2 = {
-							errTarget: invoke.descr,
-							errMsg: null,
-							errPath: invoke.path,
-							errLine: invoke.line,
-							errStart: invoke.start,
-							errEnd: invoke.end,
-						}
-					}
-
-					return {invoke: o1, receive: o2};
-
-			}
-		} )
-
-		console.log( '八組跑完了' );
-		resolve(errors);
-
-	} )
+	result = template.replace( /\t/gi, '' );
+	return result;
 }
 
-// 人工 parser，暫時不用
-// parse non-json data
-// 不論從 stdin or file 取得檔案，最終都到這裏處理
-function handleRawData( data ) {
+function getTargetFile( file ) {
 
-	return new Promise( ( resolve, reject ) => {
+	// @todo: 將來先檢查　map 中是否已讀過此檔案
+	var contents = fs.readFileSync( file, {encoding:'utf8'} )
+					 .split( '\n' );
 
-		var arr = data.split( '\n' );
+	// contents.forEach( ( item, idx ) => console.log( '>> ', idx, ' = ', item ) )
 
-		// errSets[] 內每組代表一個錯誤
-		//
-		// 最後一筆為 total errors
-		//
-		// 長度為 2 的，代表為 simple error
-		// 	- 第一行是檔案
-		// 	- 第二行是錯誤
-		//
-		// 長度為 3 的，代表為 property length
-		//
-		// 長度為 4 的，代表為 argument error
-		// 	- 第一行為檔案
-		// 	- 第二行固定是 'error'
-		// 	- 第三行為 invoke 方的錯誤與 type
-		// 	- 第四行固定是 'This type is incompatible with'
-		// 	- 第五行為 receive 方宣告的 type
-		var errSets = [];
-
-		var isStart = true;
-		var tmp = [];
-		arr.forEach( ( line, idx ) => {
-
-			isStart = line == '';
-
-			if ( isStart ) {
-				if ( idx > 0 ) {
-					errSets.push( tmp );
-					tmp = [];
-				}
-
-				return;
-			}
-
-			tmp.push( line );
-
-		} )
-
-		// 刪掉最後一筆，它是 'Found 4 errors'
-		errSets.splice( errSets.length - 1, 1 );
-
-		// console.log( '\nerrSet: \n', require('util').inspect( errSets, false, 2, true) );
-
-		let errCount = errSets.length;
-
-		// 將 errSets[] 內每筆錯誤送去 parse
-		arrErrorObj = errSets.reduce(
-				( ac, item ) => {
-					// console.log( '\n\n來了item: ', item );
-					return [...ac, parse( item )];
-				},
-
-				[]
-			);
-
-		// console.log( 'arrErrorObj: ', JSON.stringify( arrErrorObj, null, 2 ) );
-
-		// 應用：從 errObj 內生成錯誤訊息字串，方便 screen print 或寫出檔案
-		arrMessages = arrErrorObj.reduce(
-				( ac, item ) => {
-					// console.log( '\n\n來了item: ', item );
-					return [...ac, getTextMessage( item )];
-				},
-
-				[]
-			);
-
-		// 偷加上日期與錯誤數量等 meta data
-		let date = 'Created: ' + new Date().toString() + '\n';
-		arrErrorObj = [{ createdDate: date }, {total: errCount}, ...arrErrorObj];
-		arrMessages = [date, `Total Errors: ${errCount}`, ...arrMessages];
-
-		writeFile( arrMessages.join( '' ) );
-
-		// console.log( '\n\n>>arrMessages: ', JSON.stringify(arrMessages, null, 2) );
-		// console.log( '錯誤數量:', errCount );
-
-		resolve( {arrErrorObj, arrMessages} )
-	} )
+	return contents;
 }
 
 function writeFile( data ) {
-	// data = 'Created: ' + new Date().toString() + '\n' + data;
-
-	// data = 'Total Errors:' + Date.now() + '\n' + data;
 	fs.writeFile( 'flow-results.txt', data, function( err ) {
 		if ( err ) throw err;
 		console.log( '\nflow-results.txt saved.' );
 	} );
 }
-
-// 將每筆錯誤轉成 errObj{} 型式，方便將來各種應用
-// 例如在 sublime 內顯示於 tooltip 內
-function parse( arr ) {
-	switch ( arr.length ){
-
-		case 5:
-			return {invoke: parseLine( arr[2] ), receive: parseLine( arr[4] ), msg: null };
-
-		case 3:
-			return {invoke: parseLine( arr[0] ), receive: parseLine( arr[2] ), msg: arr[1] };
-
-		case 2:
-			return {invoke: parseLine( arr[0] ), receive: null, msg: arr[1] };
-
-	}
-}
-
-// 這是 errObj{} 的一種應用，就是漂亮的打印出來
-function getTextMessage( errObj ) {
-
-	let invoke = errObj.invoke;
-	let receive = errObj.receive;
-	let msg = errObj.msg;
-	let errType = invoke.errType;
-	let template, result;
-
-	// console.log( '\ninvokeObj: ', invoke, '\n\nreceive: ', receive, '\nmsg: ', msg );
-
-	if ( invoke && receive && msg ) {
-		// 3 行的
-		// /Users/jlu/gitrepos/html/flowery/dynamic.js:4:10,17: property length
-		// Property not found in
-		// /private/tmp/flow/flowlib_35b40aae/core.js:70:1,87:1: Number
-
-		var spaces = new Array( invoke.errStart ).join( ' ' );
-
-		template = `
-			> Error:
-			  ${invoke.errFile}, line ${invoke.errNumLine}
-			${invoke.errLine}
-			${spaces}↑ ${errType}: ${msg}
-
-			  From:
-			  ${receive.errFile}, line ${receive.errNumLine}
-			  ${receive.errLine}
-		`;
-
-	} else if ( invoke && receive && !msg ) {
-		// 5 行的
-		// /Users/jlu/gitrepos/html/flowery/sample.js:22:9,24: function call
-		// Error:
-		// /Users/jlu/gitrepos/html/flowery/sample.js:22:14,15: number
-		// This type is incompatible with
-		// /Users/jlu/gitrepos/html/flowery/sample.js:7:19,24: string
-
-		var spaces = new Array( invoke.errStart ).join( ' ' );
-
-		template = `
-			> Error:
-			  ${invoke.errFile}, line ${invoke.errNumLine}
-			${invoke.errLine}
-			${spaces}${'↑ expecting'} ${receive.errType}, got ${invoke.errType}
-
-			  From:
-			  ${receive.errFile}, line ${receive.errNumLine}
-			  ${receive.errLine}
-		`;
-
-	} else if ( invoke && !receive ) {
-
-		// invoke = parseLine(arr[0]);
-
-		template = `
-			${chalk.magenta.bold( '> Error:' )}
-			  ${invoke.errFile}, line ${chalk.magenta( invoke.errNumLine )}
-			  ${invoke.errLine}
-			  ${chalk.white( '↑' )} ${chalk.white( msg )}
-		`;
-	}
-
-	result = template.replace( /\t/gi, '' );
-
-	// console.log( '\n\nmsg: ', result );
-
-	return result;
-}
-
-function parseLine( aLine ) {
-	var tmp = aLine.split( ':' );
-	var errFile = tmp[0];
-	var errNumLine = +tmp[1];	// 0-based 轉成　1-based
-	var errStart = +tmp[2].split( ',' )[0];
-	var errEnd = +tmp[2].split( ',' )[1];
-	var errType = tmp[3].trim();
-
-	// @todo: 將來先檢查　map 中是否已讀過此檔案
-	var file = fs.readFileSync( errFile, {encoding:'utf8'} );
-	var contents = file.split( '\n' );
-
-	// contents.forEach( ( item, idx ) => console.log( '>> ', idx, ' = ', item ) )
-	// console.log( '錯誤行數: ', errNumLine);
-
-	var errLine = contents[errNumLine - 1];
-
-	// console.log( '錯誤內容: ', errLine );
-
-	var errSelection = errLine.substring( errStart - 1, errEnd );	// -1 magic
-	// console.log( '錯誤範圍: ', errSelection );
-
-	// console.log( '錯誤類型: ', errType );
-
-	// parsed error object
-	return {errFile, errLine, errNumLine, errStart, errEnd, errSelection, errType};
-
-}
-
