@@ -1,16 +1,19 @@
-Created: Sat Sep 05 2015 08:37:58 GMT+0800 (CST)
-Total Errors: 8
-> Error:
+Created: Sat Sep 05 2015 12:16:49 GMT+0800 (CST)
+
+1. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 3
   import bar from './zzz2';
                   ↑ Required module not found: ./zzz2
 
-> Error:
+2. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 14
   t1 = '00';
    ↑ class property initializers are not yet supported: 
 
-> Error:
+3. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 22
   var k = foo( 33, 'a22' );
                ↑ type should be string, got number
@@ -18,9 +21,10 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 7
   function foo( bar:string, coo:number ):Array<string> {
-                    ↑ origin
+                    ↑ cause
 
-> Error:
+4. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 22
   var k = foo( 33, 'a22' );
                    ↑ type should be number, got string
@@ -28,9 +32,10 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 7
   function foo( bar:string, coo:number ):Array<string> {
-                                ↑ origin
+                                ↑ cause
 
-> Error:
+5. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 32
   barr("Hello, world!");
        ↑ type should be number, got string
@@ -38,9 +43,10 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 29
     return x*10;
-           ↑ origin
+           ↑ cause
 
-> Error:
+6. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 38
   var total = lent("Hello") + lent(null);
                                    ↑ possibly null value
@@ -48,9 +54,10 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 35
     return x.length;
-           ↑ Property _length_ cannot be accessed on possibly null value
+           ↑ Property length cannot be accessed on possibly null value
 
-> Error:
+7. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 48
   total([1, 2, 3, "Hello"]);
                   ↑ type should be number, got string
@@ -58,9 +65,12 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 40
   function total(numbers: Array<number>) {
-                                ↑ origin
+                                ↑ cause
 
-> Error:
+8. Error:
+
   /Users/jlu/gitrepos/html/flowery/sample.js, line 51
     return x.length;
            ↑ Property length not found
+
+Total Errors: 8

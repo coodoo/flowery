@@ -95,9 +95,7 @@ function go( data ) {
 
 		results = arrMessages.join( '' );
 
-		stripeColors(results);
-
-		writeFile( results );
+		writeFile( chalk.stripColor(results) );
 
 		console.log( results );
 
@@ -108,10 +106,9 @@ function go( data ) {
 	}
 }
 
-function stripeColors(str){
-	console.log( '進來: ', str );
-	let s = str.replace( /\x1b\[[0-9;]*m/g, '' );
-	console.log( '清掉: ', s );
+// use chalk.stripColor() instead
+function stripColors(str){
+	return str.replace( /\x1b\[[0-9;]*m/g, '' );
 }
 
 // runs flow then pipe into flowery
@@ -237,6 +234,7 @@ function generateErrorObjects( {errors, passed, version} ) {
 				// errTarget: "property length" ← 取出 length 值
 				var msg = invoke.descr.split( '\n' );
 				let prop = msg[0].replace( 'property ', '' );
+				prop = chalk.yellow(prop);
 				let _msg = msg[1].replace( 'Property', 'Property ' + prop ).replace( ' in', '' )
 
 				var o = {
@@ -321,8 +319,7 @@ function generateErrorObjects( {errors, passed, version} ) {
 					// msg[0] errTarget: "property length"
 					// msg[1] errMsg: "Property cannot be accessed on possibly null value"
 					let prop = msg[0].replace( 'property ', '' ); // 得到 length 字串
-					// prop = chalk.red(prop); // jxtest: 上色
-					prop = '_' + prop + '_';
+					prop = chalk.yellow(prop);
 					msg[1] = msg[1].split( ' ' );
 					msg[1].splice( 1, 0, prop );
 					msg[1] = msg[1].join( ' ' );
@@ -352,20 +349,19 @@ function generateErrorObjects( {errors, passed, version} ) {
 }
 
 // 將整理好的 errors arr 逐條生成易讀的錯誤訊息
+// 內含 color code
 function generateErrorMessages( arrErrors ) {
 
 	// 應用：從 errObj 內生成錯誤訊息字串，方便 screen print 或寫出檔案
 	let arrMessages = arrErrors.reduce(
-			( ac, item ) => {
-				return [...ac, formatMessage( item )];
-			},
-
-			[]
+			( ac, item, idx ) => {
+				return [...ac, formatMessage( item, idx )];
+			}, []
 		);
 
 	// 偷加上日期與錯誤數量等 meta data
 	let date = 'Created: ' + new Date().toString() + '\n';
-	arrMessages = [date, `Total Errors: ${arrMessages.length}`, ...arrMessages];
+	arrMessages = [date, ...arrMessages, `\nTotal Errors: ${chalk.white.bgRed(arrMessages.length)}`];
 
 	// console.log( '\n\n>>arrMessages: ', JSON.stringify(arrMessages, null, 2) );
 	// console.log( '錯誤數量:', errCount );
@@ -376,8 +372,9 @@ function generateErrorMessages( arrErrors ) {
 
 // 這是 arrErrors 的一種應用，就是漂亮的打印出來
 // errObj: { invoke: o1, receive: o2, type: INVERTED }
-function formatMessage( {invoke, receive, type} ) {
+function formatMessage( {invoke, receive, type}, idx ) {
 
+	idx = idx + 1;
 	let template, result, spaces, spaces2;
 
 	// console.log( '\ninvokeObj: ', invoke, '\n\nreceive: ', receive, '\ntype: ', type );
@@ -387,10 +384,10 @@ function formatMessage( {invoke, receive, type} ) {
 			spaces = new Array( invoke.errStart ).join( ' ' );
 
 			template = `
-				> Error:
-				  ${invoke.errPath}, line ${invoke.errLine}
+				${chalk.white.bgRed(`${idx}. Error:`)}\n
+				  ${invoke.errPath}, line ${chalk.white(invoke.errLine)}
 				  ${invoke.errLineContent}
-				  ${spaces}↑ ${invoke.errMsg}: ${invoke.errTarget}
+				  ${spaces}${chalk.white('↑')} ${chalk.white(invoke.errMsg)}: ${chalk.yellow(invoke.errTarget)}
 			`;
 
 			break;
@@ -399,10 +396,10 @@ function formatMessage( {invoke, receive, type} ) {
 
 			spaces = new Array( invoke.errStart ).join( ' ' );
 			template = `
-				> Error:
-				  ${invoke.errPath}, line ${invoke.errLine}
+				${chalk.white.bgRed(`${idx}. Error:`)}\n
+				  ${invoke.errPath}, line ${chalk.white(invoke.errLine)}
 				  ${invoke.errLineContent}
-				  ${spaces}↑ ${invoke.errMsg}
+				  ${spaces}${chalk.white('↑')} ${chalk.white(invoke.errMsg)}
 			`;
 
 			break;
@@ -415,15 +412,15 @@ function formatMessage( {invoke, receive, type} ) {
 			spaces2 = new Array( receive.errStart ).join( ' ' );
 
 			template = `
-				> Error:
-				  ${invoke.errPath}, line ${invoke.errLine}
+				${chalk.white.bgRed(`${idx}. Error:`)}\n
+				  ${invoke.errPath}, line ${chalk.white(invoke.errLine)}
 				  ${invoke.errLineContent}
-				  ${spaces}↑ type should be ${receive.errTarget}, got ${invoke.errTarget}
+				  ${spaces}${chalk.white('↑ type should be')} ${chalk.yellow(receive.errTarget)}${chalk.white(', got')} ${chalk.yellow(invoke.errTarget)}
 
 				  From:
-				  ${receive.errPath}, line ${receive.errLine}
+				  ${receive.errPath}, line ${chalk.white(receive.errLine)}
 				  ${receive.errLineContent}
-				  ${spaces2}↑ origin
+				  ${spaces2}${chalk.white('↑ cause')}
 			`;
 
 			break;
@@ -437,15 +434,15 @@ function formatMessage( {invoke, receive, type} ) {
 
 			// 特別之處: 這裏拿到的 inovke 與 receive 在早先整理時已被對調過
 			template = `
-				> Error:
-				  ${invoke.errPath}, line ${invoke.errLine}
+				${chalk.white.bgRed(`${idx}. Error:`)}\n
+				  ${invoke.errPath}, line ${chalk.white(invoke.errLine)}
 				  ${invoke.errLineContent}
-				  ${spaces}↑ ${invoke.errMsg}
+				  ${spaces}${chalk.white('↑')} ${chalk.white(invoke.errMsg)}
 
 				  From:
-				  ${receive.errPath}, line ${receive.errLine}
+				  ${receive.errPath}, line ${chalk.white(receive.errLine)}
 				  ${receive.errLineContent}
-				  ${spaces2}↑ ${receive.errMsg}
+				  ${spaces2}${chalk.white('↑')} ${chalk.white(receive.errMsg)}
 			`;
 			break;
 	}
