@@ -1,4 +1,4 @@
-Created: Fri Sep 04 2015 14:18:22 GMT+0800 (CST)
+Created: Sat Sep 05 2015 08:37:58 GMT+0800 (CST)
 Total Errors: 8
 > Error:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 3
@@ -18,7 +18,7 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 7
   function foo( bar:string, coo:number ):Array<string> {
-                    ↑ triggered here
+                    ↑ origin
 
 > Error:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 22
@@ -28,7 +28,7 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 7
   function foo( bar:string, coo:number ):Array<string> {
-                                ↑ triggered here
+                                ↑ origin
 
 > Error:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 32
@@ -38,7 +38,7 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 29
     return x*10;
-           ↑ triggered here
+           ↑ origin
 
 > Error:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 38
@@ -58,7 +58,7 @@ Total Errors: 8
   From:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 40
   function total(numbers: Array<number>) {
-                                ↑ triggered here
+                                ↑ origin
 
 > Error:
   /Users/jlu/gitrepos/html/flowery/sample.js, line 51

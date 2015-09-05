@@ -27,6 +27,7 @@ Usage
 
 import fs from 'fs';
 import path from 'path';
+import {execFile} from 'child_process';
 import chalk from 'chalk';
 
 const SIMPLE = 1;
@@ -36,26 +37,35 @@ const INVERTED = 4;
 
 let arrMessages, results;
 
+// invoked via API (from node.js)
+export default function api( json:String ) {
+
+	console.log( 'API 收到資料: ', json );
+
+	let data = parseJson( json )
+
+	if ( !data ) return process.exit( 1 );
+
+	let arrErrors = generateErrorObjects( data );
+	if ( arrErrors ) {
+		arrMessages = generateErrorMessages( arrErrors );
+		let joinedMessages = arrMessages.join( '' );
+		console.log( joinedMessages );
+		return {arrErrors, arrMessages, joinedMessages}
+	}else {
+		return null;
+	}
+
+}
+
+// invoked via CLI
 if ( process.argv.length > 2 ) {
+
 	// 有傳入檔案名稱的話，代表已有 flow 生成的 json log txt，可直接開檔
 	readFile( process.argv[2] )
+
 	.then( data => {
-		debugger;
-
-		go(data);
-		/*let arrErrors = generateErrorObjects( data )
-
-		if ( arrErrors ) {
-			arrMessages = generateErrorMessages( arrErrors );
-			results = arrMessages.join( '' );
-			writeFile( results );
-			console.log( results );
-			return results;
-		}else {
-			console.log( 'No Error!' );
-			return 'No Error!';
-		}*/
-
+		go( data );
 	} );
 
 } else {
@@ -65,26 +75,32 @@ if ( process.argv.length > 2 ) {
 	.then( data => {
 
 		debugger;
-		go(data);
+		go( data );
 	} )
 
-	.catch(err => {
-		debugger;
-		console.log( '要跑 wrapper 囉: ', err );
+	.catch( err => {
+		// 既沒有 CLI argument，也沒有 pipe 東西進來，就代為執行 $ flow | flowery
 		runner();
-	})
+	} )
 }
 
-function go(data){
+function go( data ) {
 
 	// console.log( 'stdin data: ', data );
 	let arrErrors = generateErrorObjects( data )
 
 	if ( arrErrors ) {
+
 		arrMessages = generateErrorMessages( arrErrors );
+
 		results = arrMessages.join( '' );
+
+		stripeColors(results);
+
 		writeFile( results );
+
 		console.log( results );
+
 		return results;
 	}else {
 		console.log( 'No Error!' );
@@ -92,32 +108,28 @@ function go(data){
 	}
 }
 
-function runner(){
+function stripeColors(str){
+	console.log( '進來: ', str );
+	let s = str.replace( /\x1b\[[0-9;]*m/g, '' );
+	console.log( '清掉: ', s );
+}
 
-	var exec = require('exec');
-	// var exec = require('child_process').execFile;
+// runs flow then pipe into flowery
+// equals CLI command '$ flow --json | flowery'
+function runner() {
 
-	exec(['flow', '--json'], (err, out, code) => {
-	// exec('flow', ['--json'], (err, out, code) => {
-	  // if (err instanceof Error)
-	  //   throw err;
-	  // process.exit(code);
+	execFile( 'flow', ['--json'], function( error, stdout, stderr ) {
+		if ( stderr ) {
+			return console.log( 'runner err: ', stderr );
+		}
 
-	  console.log( '結果: ', arguments );
-	  if(err){
-	  	return console.log('ruuner err: ', err);
-	  }
+		let data = parseJson( stdout );
 
-	  let data = parseJson(out);
+		if ( !data ) return process.exit( 1 );
 
-	  if(!data) return process.exit(1);
+		go( data );
+	} );
 
-	  // console.log( 'runner data: ', data );
-
-	  go(data);
-	});
-
-	// console.log( 'runner 結果: ', child );
 }
 
 // 如果是透過 cli pipe 進來的，就從 stdin 讀資料
@@ -135,9 +147,9 @@ function readStdin() {
 			if ( content !== null ) {
 
 				// 有讀到東西，但有可能是 JSON
-				content = parseJson(content)
+				content = parseJson( content )
 
-				if(!content) return process.exit(1);
+				if ( !content ) return process.exit( 1 );
 
 				resolve( content );
 
@@ -157,7 +169,7 @@ function parseJson( data ) {
 	try {
 		content = JSON.parse( data );
 	}catch ( e ) {
-		console.error('Invalid JSON format, did you forget to add "--json" argument to flow?');
+		console.error( 'Invalid JSON format, did you forget to add "--json" argument to flow?' );
 		return null;
 	}
 
@@ -165,8 +177,7 @@ function parseJson( data ) {
 }
 
 // 讀取檔案，並解析 JSON 後返還結果
-// 也可透過 API 傳入檔案(效果等於 pipe)
-export default function readFile( name ) {
+function readFile( name ) {
 
 	let data, content;
 
@@ -412,7 +423,7 @@ function formatMessage( {invoke, receive, type} ) {
 				  From:
 				  ${receive.errPath}, line ${receive.errLine}
 				  ${receive.errLineContent}
-				  ${spaces2}↑ triggered here
+				  ${spaces2}↑ origin
 			`;
 
 			break;
