@@ -135,8 +135,20 @@ function stripColors(str){
 // equals CLI command '$ flow --json | flowery'
 function runner() {
 
+	execFile( 'flow', ['--json'], function( error, stdout, stderr ) {
+		if ( stderr ) {
+			return console.log( 'runner err: ', stderr );
+		}
+
+		let data = parseJson( stdout );
+
+		if ( !data ) return process.exit( 1 );
+
+		go( data );
+	} );
+
 	// check if flow existed
-	execFile( 'which', ['flow'], function( error, stdout, stderr ) {
+	/*execFile( 'which', ['flow'], function( error, stdout, stderr ) {
 		if(!stdout){
 			return console.log('Flow not found, be sure to install it first.');
 		}
@@ -153,7 +165,7 @@ function runner() {
 
 			go( data );
 		} );
-	})
+	})*/
 }
 
 // 如果是透過 cli pipe 進來的，就從 stdin 讀資料
