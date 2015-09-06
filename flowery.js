@@ -73,13 +73,14 @@ const $VERSION = require(vPath).version;
 // invoked via CLI
 if ( process.argv.length > 2 ) {
 
-	if(process.argv[2] == '--version'){
+	let arg = process.argv[2];
+	if( arg == '--version' || arg == '-v' ){
 		console.log($VERSION);
 		process.exit(0);
 	}
 
 	// 有傳入檔案名稱的話，代表已有 flow 生成的 json log txt，可直接開檔
-	readFile( process.argv[2] )
+	readFile( arg )
 
 	.then( data => {
 		go( data );
