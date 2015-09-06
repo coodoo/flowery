@@ -29,7 +29,9 @@
   "scripts": {
     "build": "babel --stage 0 -o ./build/flowery.js flowery.js",
     "release": "npm version patch& npm publish",
-    "start": "babel-node flowery"
+    "start": "babel-node flowery",
+    "prepublish": "npm run build",
+    "pub": "npm run build && git add . && git commit -am 'chore(app): build'"
   },
   "bin": {
     "flowery": "./build/flowery.js"

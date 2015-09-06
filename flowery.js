@@ -66,13 +66,7 @@ export default function flowery( json:String ) {
 
 }
 
-console.log( 'args: ', process.argv );
-
-// var data = fs.readFileSync( path.resolve( __dirname, '../package.json'), {encoding:'utf8'} );
-// console.log( '\njson1: ', data );
-// console.log( '\n\njson2: ', JSON.parse(data) );
-console.log( '\n版號: ', require('./package.json').version );
-
+// console.log( '\n版號: ', require('./package.json').version );
 const $VERSION = require('./package.json').version;
 
 // invoked via CLI
@@ -120,6 +114,8 @@ function go( data ) {
 		writeFile( chalk.stripColor(results) );
 
 		console.log( results );
+
+		console.log( `\nflowery v${$VERSION}` );
 
 		return results;
 	}else {
@@ -496,6 +492,6 @@ function getTargetFile( file ) {
 function writeFile( data ) {
 	fs.writeFile( 'flow-results.txt', data, function( err ) {
 		if ( err ) throw err;
-		console.log( '\nflow-results.txt saved.' );
+		// console.log( '\nflow-results.txt saved.' );
 	} );
 }
