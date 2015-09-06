@@ -68,13 +68,12 @@ export default function flowery( json:String ) {
 
 // console.log( '\n版號: ', require('./package.json').version );
 let vPath = ( __dirname.indexOf('build') == -1 ) ? './package.json' : '../package.json';
-console.log( 'vPath 是: ', vPath );
 const $VERSION = require(vPath).version;
 
 // invoked via CLI
 if ( process.argv.length > 2 ) {
 
-	if(process.argv[2].toLowerString() == '--version'){
+	if(process.argv[2] == '--version'){
 		console.log($VERSION);
 		process.exit(0);
 	}
