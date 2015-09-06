@@ -136,8 +136,8 @@ function stripColors(str){
 function runner() {
 
 	execFile( 'flow', ['--json'], function( error, stdout, stderr ) {
-		if ( stderr ) {
-			return console.log( 'runner err: ', stderr );
+		if ( stderr && stderr.indexOf('Flow server launched for') == -1 ) {
+			return console.log( 'Flowery runner error: ', stderr );
 		}
 
 		let data = parseJson( stdout );
@@ -265,29 +265,34 @@ function generateErrorObjects( {errors, passed, version} ) {
 				invoke = arrMessage[0];
 				receive = arrMessage[1]; // 用不到
 
-				lines = getTargetFile( invoke.path );
-				errLineContent = lines[invoke.line - 1];
-				errSelection = errLineContent.substring( invoke.start - 1, invoke.end );
+				if (arrMessage[0].descr.indexOf('type is incompatible') != -1) {
+					// 特例：處理只有2筆 messages 但應該是 type error
+					arrMessage.unshift('dummy');
+				}else{
+					lines = getTargetFile( invoke.path );
+					errLineContent = lines[invoke.line - 1];
+					errSelection = errLineContent.substring( invoke.start - 1, invoke.end );
 
-				// errMsg: "Property not found in" ← in 拿掉，將 length 組合進去
-				// errTarget: "property length" ← 取出 length 值
-				var msg = invoke.descr.split( '\n' );
-				let prop = msg[0].replace( 'property ', '' );
-				prop = chalk.yellow(prop);
-				let _msg = msg[1].replace( 'Property', 'Property ' + prop ).replace( ' in', '' )
+					// errMsg: "Property not found in" ← in 拿掉，將 length 組合進去
+					// errTarget: "property length" ← 取出 length 值
+					var msg = invoke.descr.split( '\n' );
+					let prop = msg[0].replace( 'property ', '' );
+					prop = chalk.yellow(prop);
+					let _msg = msg[1].replace( 'Property', 'Property ' + prop ).replace( ' in', '' )
 
-				var o = {
-					errTarget: msg[0],
-					errMsg: _msg,
-					errPath: invoke.path,
-					errLine: invoke.line,
-					errLineContent,
-					errSelection,
-					errStart: invoke.start,
-					errEnd: invoke.end,
+					var o = {
+						errTarget: msg[0],
+						errMsg: _msg,
+						errPath: invoke.path,
+						errLine: invoke.line,
+						errLineContent,
+						errSelection,
+						errStart: invoke.start,
+						errEnd: invoke.end,
+					}
+
+					return {invoke: o, receive: null, type: NORMAL };
 				}
-
-				return {invoke: o, receive: null, type: NORMAL };
 
 			case 3:
 
