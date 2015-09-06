@@ -1,0 +1,76 @@
+Created: Sun Sep 06 2015 08:47:15 GMT+0800 (CST)
+
+1. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 3
+  import bar from './zzz2';
+                  ↑ Required module not found: ./zzz2
+
+2. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 14
+  t1 = '00';
+   ↑ class property initializers are not yet supported: 
+
+3. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+  var k = foo( 33, 'a22' );
+               ↑ type should be string, got number
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  function foo( bar:string, coo:number ):Array<string> {
+                    ↑ cause
+
+4. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 22
+  var k = foo( 33, 'a22' );
+                   ↑ type should be number, got string
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 7
+  function foo( bar:string, coo:number ):Array<string> {
+                                ↑ cause
+
+5. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 32
+  barr("Hello, world!");
+       ↑ type should be number, got string
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 29
+    return x*10;
+           ↑ cause
+
+6. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 38
+  var total = lent("Hello") + lent(null);
+                                   ↑ possibly null value
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 35
+    return x.length;
+           ↑ Property length cannot be accessed on possibly null value
+
+7. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 48
+  total([1, 2, 3, "Hello"]);
+                  ↑ type should be number, got string
+
+  From:
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 40
+  function total(numbers: Array<number>) {
+                                ↑ cause
+
+8. Error:
+
+  /Users/jlu/gitrepos/html/flowery/sample.js, line 51
+    return x.length;
+           ↑ Property length not found
+
+Total Errors: 8
