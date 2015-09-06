@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-if ( process.env.NODE_ENV && process.env.NODE_ENV !== 'production' ) {
-	process.stdout.write( '\u001B[2J\u001B[0;0f' );
-}
+// if ( process.env.NODE_ENV && process.env.NODE_ENV !== 'production' ) {
+// 	process.stdout.write( '\u001B[2J\u001B[0;0f' );
+// }
 
-process.stdout.write( '\u001B[2J\u001B[0;0f' );
 
 /*
 
@@ -49,7 +48,7 @@ let arrMessages, results;
 // invoked via API (from node.js)
 export default function flowery( json:String ) {
 
-	console.log( 'API 收到資料: ', json );
+	// console.log( 'API 收到資料: ', json );
 
 	let data = parseJson( json )
 
@@ -67,8 +66,22 @@ export default function flowery( json:String ) {
 
 }
 
+console.log( 'args: ', process.argv );
+
+// var data = fs.readFileSync( path.resolve( __dirname, '../package.json'), {encoding:'utf8'} );
+// console.log( '\njson1: ', data );
+// console.log( '\n\njson2: ', JSON.parse(data) );
+console.log( '\n版號: ', require('./package.json').version );
+
+const $VERSION = require('./package.json').version;
+
 // invoked via CLI
 if ( process.argv.length > 2 ) {
+
+	if(process.argv[2].toLowerString() == '--version'){
+		console.log($VERSION);
+		process.exit(0);
+	}
 
 	// 有傳入檔案名稱的話，代表已有 flow 生成的 json log txt，可直接開檔
 	readFile( process.argv[2] )
