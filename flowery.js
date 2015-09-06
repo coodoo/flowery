@@ -67,7 +67,8 @@ export default function flowery( json:String ) {
 }
 
 // console.log( '\n版號: ', require('./package.json').version );
-let vPath = ( process.cwd().indexOf('build') == -1 ) ? './package.json' : '../package.json';
+let vPath = ( __dirname.indexOf('build') == -1 ) ? './package.json' : '../package.json';
+console.log( 'vPath 是: ', vPath );
 const $VERSION = require(vPath).version;
 
 // invoked via CLI
